@@ -9,5 +9,16 @@ module RSolr
       opts = Hash === args[-1] ? args[-1] : {}
       RSolr::Europeana::Client.new driver.new, opts
     end
+    
+    def self.logger
+      unless @logger
+        if defined?(Rails) && Rails.logger
+          @logger = Rails.logger
+        else
+          @logger = Logger.new(STDOUT)
+        end
+      end
+      @logger
+    end
   end
 end

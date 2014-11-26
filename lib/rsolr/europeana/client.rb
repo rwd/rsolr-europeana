@@ -59,7 +59,7 @@ module RSolr
           opts[:uri].query << '&query='
         end
 
-        Rails.logger.debug("RSolr::Europeana::Client#build_request URI: #{opts[:uri].inspect}")
+        RSolr::Europeana.logger.debug("Europeana API request URL: #{opts[:uri].inspect}")
         opts
       end
       
@@ -74,11 +74,13 @@ module RSolr
       end
       
       def solrize_record_response(response)
-        Rails.logger.debug("RSolr::Europeana::Client#evaluate_json_response object: #{response[:object].inspect}")
         obj = response[:object]
+        
         doc = obj.reject do |key, value| 
           [ :aggregations, :proxies, :providedCHOs, :europeanaAggregation ].include?(key)
         end
+        
+        doc[:id] = obj[:about]
         
         proxy = obj[:proxies].first.reject do |key, value|
           [ :proxyFor, :europeanaProxy, :proxyIn, :about ].include?(key)
@@ -105,7 +107,7 @@ module RSolr
             end
           end
         end
-
+        
         {
           'response' => {
             'numFound' => 1,
