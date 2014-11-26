@@ -14,7 +14,7 @@ module RSolr
           path = "/api/v2/search.json"
           
           opts[:params][:query] = opts[:params].delete(:q)
-          opts[:params][:profile] = "facets"
+          opts[:params][:profile] = "facets params"
           opts[:params][:facet] = opts[:params].delete("facet.field")
           opts[:params][:start] = (opts[:params][:start] || 0) + 1
           opts[:params][:qf] = (opts[:params].delete(:fq) || [])
@@ -64,35 +64,73 @@ module RSolr
       end
       
       def evaluate_json_response(request, response)
-        result = super
+        evaluated_response = super
         
-        if result[:object]
-          solr_result = {
-            'response' => {
-              'numFound' => 1,
-              'start' => 0,
-              'docs' => [ result[:object] ]
-            }
-          }
+        if evaluated_response[:object]
+          solrize_record_response(evaluated_response)
         else
-          facet_fields = (result[:facets] || []).inject({}) do |facet_fields, facet|
-            facet_fields[facet[:name]] = facet[:fields].collect { |field| [ field[:label], field[:count] ] }.flatten
-            facet_fields
+          solrize_search_response(evaluated_response)
+        end
+      end
+      
+      def solrize_record_response(response)
+        Rails.logger.debug("RSolr::Europeana::Client#evaluate_json_response object: #{response[:object].inspect}")
+        obj = response[:object]
+        doc = obj.reject do |key, value| 
+          [ :aggregations, :proxies, :providedCHOs, :europeanaAggregation ].include?(key)
+        end
+        
+        proxy = obj[:proxies].first.reject do |key, value|
+          [ :proxyFor, :europeanaProxy, :proxyIn, :about ].include?(key)
+        end
+        
+        aggregation = obj[:aggregations].first.reject do |key, value|
+          [ :webResources, :aggregatedCHO, :about ].include?(key)
+        end
+        
+        eaggregation = obj[:europeanaAggregation].reject do |key, value|
+          [ :about, :aggregatedCHO ].include?(key)
+        end
+        
+        doc.merge!(proxy).merge!(aggregation).merge!(eaggregation)
+
+        doc.each_pair do |key, value|
+          if value.is_a?(Array)
+            doc[key] = value.uniq
+          elsif value.is_a?(Hash)
+            if (value.length == 1) && value.has_key?(:def)
+              doc[key] = doc[key][:def]
+            elsif value.has_key?(:en)
+              doc[key] = doc[key][:en]
+            end
           end
-          
-          solr_result = {
-            'response' => {
-              'numFound' => result[:totalResults],
-              'start' => (request[:params]['start'] || 0) - 1,
-              'docs' => result[:items],
-            },
-            'facet_counts' => {
-              'facet_fields' => facet_fields
-            }
-          }
         end
 
-        solr_result
+        {
+          'response' => {
+            'numFound' => 1,
+            'start' => 0,
+            'docs' => [ doc ]
+          }
+        }
+      end
+      
+      def solrize_search_response(response)
+        facet_fields = (response[:facets] || []).inject({}) do |facet_fields, facet|
+          facet_fields[facet[:name]] = facet[:fields].collect { |field| [ field[:label], field[:count] ] }.flatten
+          facet_fields
+        end
+        
+        {
+          'response' => {
+            'numFound' => response[:totalResults],
+            'start' => (response[:params][:start] || 0) - 1,
+            'docs' => response[:items],
+          },
+          'facet_counts' => {
+            'facet_fields' => facet_fields
+          }
+        }
       end
     end
   end
