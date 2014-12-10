@@ -44,7 +44,7 @@ module RSolr
         when NilClass, Fixnum
           value
         when String
-          value.sub(/\A\{.*?=([^ \}]*).*?\}(.*)\Z/, '\1:\2')
+          value.sub(/\A\{.*?=([^ \}]*).*?\}(.*)\Z/, '\1:"\2"')
         when Array
           value.collect { |one| rewrite_solr_local_param(name, one) }
         else
@@ -66,7 +66,6 @@ module RSolr
       end
       
       def evaluate_json_response(request, response)
-        RSolr::Europeana.logger.debug("RSolr::Europeana request: #{request.inspect}")
         evaluated_response = super
         
         if evaluated_response[:object]
