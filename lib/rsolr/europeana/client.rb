@@ -10,10 +10,6 @@ module RSolr
         if (opts[:params][:qt] == "document") && opts[:params][:id]
           id = opts[:params].delete(:id)
           path = "/api/v2/record/#{id}.json"
-        elsif opts[:params][:q] && (id_match = opts[:params][:q].match(/\Aid:\("(.+)"\)\Z/))
-          id = id_match[1]
-          opts[:params].delete(:query)
-          path = "/api/v2/record/#{id}.json"
         elsif opts[:params][:q].blank?
           return fake_empty_search_response
         else
