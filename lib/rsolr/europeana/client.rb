@@ -88,8 +88,10 @@ module RSolr
       def solrize_record_response(response)
         obj = response[:object]
         
-        doc = obj.reject do |key, value| 
-          [ :aggregations, :proxies, :providedCHOs, :europeanaAggregation ].include?(key)
+        doc = obj.select do |key, value|
+          [ :edmDatasetName, :language, :type, :title, :about, 
+            :europeanaCollectionName, :timestamp_created_epoch,
+            :timestamp_update_epoch, :timestamp_created, :timestamp_update ].include?(key)
         end
         
         doc[:id] = obj[:about]
