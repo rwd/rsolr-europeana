@@ -109,16 +109,17 @@ module RSolr
         end
         
         doc.merge!(proxy).merge!(aggregation).merge!(eaggregation)
-
-        doc.each_pair do |key, value|
+        
+        doc.dup.each_pair do |key, value|
           if value.is_a?(Array)
             doc[key] = value.uniq
           elsif value.is_a?(Hash)
-            if (value.length == 1) && value.has_key?(:def)
-              doc[key] = doc[key][:def].uniq
-            elsif value.has_key?(:en)
-              doc[key] = doc[key][:en].uniq
+            if value.has_key?(:def)
+              value.each_pair do |lang, labels|
+                doc["#{key}_#{lang}"] = labels
+              end
             end
+            doc.delete(key)
           end
         end
         
