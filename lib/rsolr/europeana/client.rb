@@ -7,6 +7,9 @@ module RSolr
       end
       
       def send_and_receive(path, opts)
+#        RSolr::Europeana.logger.debug("RSolr::Europeana::Client#send_and_receive path: #{path}")
+#        RSolr::Europeana.logger.debug("RSolr::Europeana::Client#send_and_receive opts: #{opts.inspect}")
+        
         if (opts[:params][:qt] == "document") && opts[:params][:id]
           id = opts[:params].delete(:id)
           path = "/api/v2/record/#{id}.json"
@@ -21,14 +24,18 @@ module RSolr
           opts[:params][:start] = (opts[:params][:start] || 0) + 1
           opts[:params][:qf] = (opts[:params].delete(:fq) || [])
           
-          opts[:params].delete("facet.query") # @todo map to s'thing
-          opts[:params].delete("facet.pivot") # @todo map to s'thing, or raise error if present
-          opts[:params].delete(:sort) # @todo restore when API supports sort
+          # Remove params unsupported by the API
+          # @todo implement in the API / map to s'thing else / raise error if present
+          opts[:params].delete("spellcheck.q")
+          opts[:params].delete("facet.query")
+          opts[:params].delete("facet.pivot")
+          opts[:params].delete(:sort)
         end
         opts[:params].delete(:qt)
         opts[:params].delete(:wt)
         opts[:params][:wskey] = @options[:api_key]
         rewrite_solr_local_params!(opts[:params])
+        
         super(path, opts)
       end
       
