@@ -51,7 +51,7 @@ module RSolr
         when NilClass, Fixnum
           value
         when String
-          value.sub(/\A\{.*?=([^ \}]*).*?\}(.*)\Z/, '\1:"\2"')
+          value.sub(/\A\{.*?=([^ \}]*).*?\}(.*)\Z/, '\1:\2')
         when Array
           value.collect { |one| rewrite_solr_local_param(name, one) }
         else
