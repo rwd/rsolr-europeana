@@ -7,8 +7,8 @@ module RSolr
       end
       
       def send_and_receive(path, opts)
-#        RSolr::Europeana.logger.debug("RSolr::Europeana::Client#send_and_receive path: #{path}")
-#        RSolr::Europeana.logger.debug("RSolr::Europeana::Client#send_and_receive opts: #{opts.inspect}")
+        RSolr::Europeana.logger.debug("RSolr::Europeana::Client#send_and_receive path: #{path}")
+        RSolr::Europeana.logger.debug("RSolr::Europeana::Client#send_and_receive opts: #{opts.inspect}")
         
         if (opts[:params][:qt] == "document") && opts[:params][:id]
           id = opts[:params].delete(:id)
@@ -51,7 +51,11 @@ module RSolr
         when NilClass, Fixnum
           value
         when String
-          value.sub(/\A\{.*?=([^ \}]*).*?\}(.*)\Z/, '\1:\2')
+          if name == "query"
+            value.sub(/\A\{.*?=([^ \}]*).*?\}(.*)\Z/, '\1:\2')
+          else
+            value.sub(/\A\{.*?=([^ \}]*).*?\}(.*)\Z/, '\1:"\2"')
+          end
         when Array
           value.collect { |one| rewrite_solr_local_param(name, one) }
         else
