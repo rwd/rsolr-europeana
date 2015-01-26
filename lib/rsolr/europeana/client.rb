@@ -6,23 +6,40 @@ module RSolr
         super(connection, options)
       end
       
-      def send_and_receive(path, opts)
-        RSolr::Europeana.logger.debug("RSolr::Europeana::Client#send_and_receive path: #{path}")
-        RSolr::Europeana.logger.debug("RSolr::Europeana::Client#send_and_receive opts: #{opts.inspect}")
-        
+      def execute(request_context)
+        if request_context[:params]["query"].nil? && request_context[:path].match(/\/search\.json/)
+          fake_empty_search_response
+        else
+          RSolr::Europeana.logger.debug("Europeana API request URL: #{request_context[:uri].to_s}")
+          super
+        end
+      end
+      
+      def build_request(path, opts)
+        path, opts = adapt_request_for_api(path, opts)
+        self.class.default_wt = "json"
+        super(path, opts)
+      end
+      
+      def adapt_response(request, response)
+        result = super
+        result[:object] ? solrize_record_response(result) : solrize_search_response(result)
+      end
+      
+    protected
+      
+      def adapt_request_for_api(path, opts)
         if (opts[:params][:qt] == "document") && opts[:params][:id]
           id = opts[:params].delete(:id)
           path = "/api/v2/record/#{id}.json"
-        elsif opts[:params][:q].blank?
-          return fake_empty_search_response
         else
           path = "/api/v2/search.json"
           
-          opts[:params][:query] = opts[:params].delete(:q)
+          opts[:params][:query] = opts[:params].delete(:q) unless opts[:params][:q].blank?
           opts[:params][:profile] = "facets params"
           opts[:params][:facet] = opts[:params].delete("facet.field")
           opts[:params][:start] = (opts[:params][:start] || 0) + 1
-          opts[:params][:qf] = (opts[:params].delete(:fq) || [])
+          opts[:params][:qf] = opts[:params].delete(:fq) unless opts[:params][:fq].blank?
           
           # Remove params unsupported by the API
           # @todo implement in the API / map to s'thing else / raise error if present
@@ -36,7 +53,7 @@ module RSolr
         opts[:params][:wskey] = @options[:api_key]
         rewrite_solr_local_params!(opts[:params])
         
-        super(path, opts)
+        return path, opts
       end
       
       def rewrite_solr_local_params!(local_params = {})
@@ -44,7 +61,6 @@ module RSolr
           local_params[name] = rewrite_solr_local_param(name, value)
         end
       end
-      protected :rewrite_solr_local_params!
       
       def rewrite_solr_local_param(name, value)
         case value
@@ -62,30 +78,15 @@ module RSolr
           raise ArgumentError, "Unexpected param type: #{value.class.to_s}"
         end
       end
-      protected :rewrite_solr_local_param
       
-      def build_request(path, opts)
-        opts = super
-        opts[:params][:wt] = "json"
-        if opts[:path].match(/search\.json/) && opts[:params]["query"].to_s.empty?
-          opts[:query] << '&query='
-          opts[:uri].query << '&query='
-        end
-
-        RSolr::Europeana.logger.debug("Europeana API request URL: #{opts[:uri].to_s}")
-        opts
-      end
-      
-      def evaluate_json_response(request, response)
-        evaluated_response = super
-        
-        if evaluated_response[:object]
-          solrize_record_response(evaluated_response)
-        else
-          solrize_search_response(evaluated_response)
-        end
-      end
-      
+      ##
+      # Constructs a pseudo-response as would be returned by a query to Solr 
+      # with no results.
+      #
+      # Used by #send_and_receive if no query terms are present in a search
+      # query.
+      #
+      # @return [Hash]
       def fake_empty_search_response
         {
           'response' => {
@@ -96,6 +97,12 @@ module RSolr
         }
       end
       
+      ##
+      # Adapts a response from the API's Record method to resemble a Solr
+      # query response of one document.
+      #
+      # @param [Hash] response The Europeana REST API response
+      # @return [Hash]
       def solrize_record_response(response)
         obj = response[:object]
         
@@ -143,6 +150,12 @@ module RSolr
         }
       end
       
+      ##
+      # Adapts a response from the API's Search method to resemble a Solr
+      # query response.
+      #
+      # @param [Hash] response The Europeana REST API response
+      # @return [Hash]
       def solrize_search_response(response)
         facet_fields = (response[:facets] || []).inject({}) do |facet_fields, facet|
           facet_fields[facet[:name]] = facet[:fields].collect { |field| [ field[:label], field[:count] ] }.flatten
