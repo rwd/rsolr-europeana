@@ -7,12 +7,8 @@ module RSolr
       end
       
       def execute(request_context)
-        if request_context[:params]["query"].nil? && request_context[:path].match(/\/search\.json/)
-          fake_empty_search_response
-        else
-          RSolr::Europeana.logger.debug("Europeana API request URL: #{request_context[:uri].to_s}")
-          super
-        end
+        RSolr::Europeana.logger.debug("Europeana API request URL: #{request_context[:uri].to_s}")
+        super
       end
       
       def build_request(path, opts)
@@ -35,7 +31,7 @@ module RSolr
         else
           path = "/api/v2/search.json"
           
-          opts[:params][:query] = opts[:params].delete(:q) unless opts[:params][:q].blank?
+          opts[:params][:query] = opts[:params][:q].blank? ? '*:*' : opts[:params].delete(:q)
           opts[:params][:profile] = "facets params"
           opts[:params][:facet] = opts[:params].delete("facet.field")
           opts[:params][:start] = (opts[:params][:start] || 0) + 1
@@ -77,24 +73,6 @@ module RSolr
         else
           raise ArgumentError, "Unexpected param type: #{value.class.to_s}"
         end
-      end
-      
-      ##
-      # Constructs a pseudo-response as would be returned by a query to Solr 
-      # with no results.
-      #
-      # Used by #send_and_receive if no query terms are present in a search
-      # query.
-      #
-      # @return [Hash]
-      def fake_empty_search_response
-        {
-          'response' => {
-            'numFound' => 0,
-            'start' => 0,
-            'docs' => [ ]
-          }
-        }
       end
       
       ##
