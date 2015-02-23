@@ -9,7 +9,8 @@ module RSolr
         end
 
         def rewrite_params
-          @params[:query] = @params[:q].blank? ? '*:*' : @params.delete(:q)
+          @params[:query] = @params.delete(:q)
+          @params[:query] = '*:*' if @params[:query] == '{!qf=all_fields}'
           @params[:profile] = 'facets params'
           @params[:facet] = @params.delete('facet.field')
           @params[:start] = (@params[:start] || 0) + 1

@@ -51,7 +51,8 @@ module RSolr
 
         def rewrite_solr_local_string(name, value)
           if name == 'query'
-            value.sub(/\A\{.*?=([^ \}]*).*?\}(.*)\Z/, '\1:\2')
+            qvalue = value.sub(/\A\{!qf=all_fields\}/, '')
+            qvalue.sub(/\A\{.*?=([^ \}]*).*?\}(.*)\Z/, '\1:\2')
           else
             value.sub(/\A\{.*?=([^ \}]*).*?\}(.*)\Z/, '\1:"\2"')
           end
