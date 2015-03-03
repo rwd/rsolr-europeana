@@ -4,28 +4,38 @@ module RSolr
       ##
       # Abstract base class for request rewriters
       class Base
+        class << self
+          ##
+          # @!attribute rewrite_methods
+          #   @return [Array] methods to call when rewriting with {#execute}
+          attr_accessor :rewrite_methods
+        end
+        @rewrite_methods = [:delete_params, :rewrite_solr_local_params]
+
         def initialize(solr_params)
-          @solr_params = solr_params
+          @solr_params = HashWithIndifferentAccess.new(solr_params)
         end
 
+        ##
+        # Return the API URL path for the requested query
+        #
+        # Sub-classes need to implement this for the type of query represented.
+        #
+        # @raise [NotImplementedError] if called on this class directly
         def path
           fail NotImplementedError
         end
 
-        def params
-          if @params.nil?
-            @params = @solr_params.dup
-            rewrite_params
-          end
+        def execute
+          return @params unless @params.nil?
+          @params = @solr_params
+          self.class.rewrite_methods.each { |meth| send(meth) }
           @params
         end
 
-        def rewrite_params
-          delete_unsupported_params
-          rewrite_solr_local_params
-        end
+        protected
 
-        def delete_unsupported_params
+        def delete_params
           @params.delete(:qt)
           @params.delete(:wt)
         end
@@ -45,7 +55,7 @@ module RSolr
           when Array
             value.collect { |one| rewrite_solr_local_param(name, one) }
           else
-            fail ArgumentError, "Unexpected param type: #{value.class}"
+            fail ArgumentError, "Unexpected param type for \"#{name}\": #{value.class}"
           end
         end
 

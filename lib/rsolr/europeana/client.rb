@@ -4,8 +4,9 @@ module RSolr
     # Europeana REST API client with RSolr interface
     class Client < RSolr::Client
       def initialize(connection, options = {})
-        options[:url] = 'http://www.europeana.eu/api/v2'
-        super(connection, options)
+        local_options = options.dup
+        local_options[:url] = RSolr::Europeana::URL
+        super(connection, local_options)
       end
 
       def execute(request_context)
@@ -39,7 +40,7 @@ module RSolr
         else
           rewriter = RequestRewriter::Search.new(opts[:params])
         end
-        rewritten_params = rewriter.params.merge(wskey: @options[:api_key])
+        rewritten_params = rewriter.execute.merge(wskey: @options[:api_key])
         [rewriter.path, opts.merge(params: rewritten_params)]
       end
     end
