@@ -20,13 +20,12 @@ Or install it yourself as:
 ## Usage
 
 1. Get a Europeana API key at: http://labs.europeana.eu/api/registration/
-2. Connect to RSolr::Europeana with your API key: `client = RSolr::Europeana.connect(api_key: 'YOUR_API_KEY')`
-3. Send queries to the client as you would RSolr...
+2. Connect to RSolr::Europeana with your API key:
+  `client = RSolr::Europeana.connect(api_key: 'YOUR_API_KEY')`
+3. Send queries to the client as you would RSolr.
 
-## Contributing
+## License
 
-1. Fork it
-2. Create your feature branch (`git checkout -b my-new-feature`)
-3. Commit your changes (`git commit -am 'Add some feature'`)
-4. Push to the branch (`git push origin my-new-feature`)
-5. Create new Pull Request
+Licensed under the EUPL V.1.1.
+
+For full details, see [LICENSE.md](LICENSE.md).
