@@ -4,9 +4,7 @@ module RSolr
     # Europeana REST API client with RSolr interface
     class Client < RSolr::Client
       def initialize(connection, options = {})
-        local_options = options.dup
-        local_options[:url] = RSolr::Europeana::URL
-        super(connection, local_options)
+        super(connection, options.merge(url: RSolr::Europeana::URL))
       end
 
       def execute(request_context)

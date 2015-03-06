@@ -7,9 +7,6 @@ module RSolr
         ##
         # Adapts a response from the API's Search method to resemble a Solr
         # query response.
-        #
-        # @param [Hash] response The Europeana REST API response
-        # @return [Hash]
         def rewrite_response
           @response = {
             'response' => {

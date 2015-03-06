@@ -17,7 +17,8 @@ module RSolr
           @params[:profile] = 'facets params'
           @params[:facet] = @params.delete('facet.field')
           @params[:start] = (@params[:start] || 0) + 1
-          @params[:qf] = @params.delete(:fq) unless @params[:fq].blank?
+#          @params[:qf] = @params.delete(:fq) unless @params[:fq].blank?
+          @params[:qf] = (@params[:qf] || []) + (@params.delete(:fq) || [])
         end
 
         ##

@@ -28,7 +28,7 @@ module RSolr
 
         def execute
           return @params unless @params.nil?
-          @params = @solr_params
+          @params = @solr_params.dup
           self.class.rewrite_methods.each { |meth| send(meth) }
           @params
         end
